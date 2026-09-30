@@ -64,19 +64,19 @@ if (isset($_POST['login'])) {
 <head>
     <meta charset="UTF-8">
     <title>Login Sistem Pelanggaran Siswa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
 </head>
-<body>
+<body class="p-3 mb-2 bg-primary text-white">
 
-    <img src="assets/logosmk.png" alt="Logo">
+<center>
+    <img src="assets/image.png" alt="Logo" with="250" height="250">
 
         <h2>Sistem Pelanggaran Siswa</h2>
-
     <?php
     if ($error != "") {
         echo "<p>$error</p>";
     }
     ?>
-
     <?php
         if (isset($_GET['pesan'])) {
 
@@ -89,28 +89,18 @@ if (isset($_POST['login'])) {
             }
         }
     ?>
-
     <form action="proses_login.php" method="POST">
-
         <label>Username/Email :</label>
         <br>
-
-        <input
-            type="text" name="username" placeholder="Masukkan username atau email" required>
-
+        <input type="text" name="username" class="shadow p-7 mb-7 bg-body-tertiary rounded">
         <br><br>
-
         <label>Password :</label>
         <br>
-
-        <input
-            type="password" name="password" placeholder="Masukkan password" required>
-
+        <input type="password" name="password" class="shadow p-7 mb-7 bg-body-tertiary rounded">
         <br><br>
-
-        <button type="submit" name="login">Login</button>
-
+        <button type="submit" name="login" class="btn btn-success">Login</button>
     </form>
+</center>
 <?php include "footer.php"; ?>
 </body>
 </html>

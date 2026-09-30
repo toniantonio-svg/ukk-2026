@@ -1,17 +1,106 @@
 <?php
+
 require_once "cek_session.php";
 
-cek_admin();
+cek_login();
+
+$nama = $_SESSION['name'];
+$role = $_SESSION['role'];
+
+require_once "config.php";
+$query_siswa = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_siswa");
+
+if (!$query_siswa) {
+    die("Query siswa gagal: " . mysqli_error($conn));
+}
+
+$data_siswa = mysqli_fetch_assoc($query_siswa);
+$total_siswa = $data_siswa['total'];
+
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
+
 <head>
-    <title>Daftar Siswa - SMK Muhammadiyah Tasikmalaya</title>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Data Siswa</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+        crossorigin="anonymous">
+
 </head>
+
 <body>
-    <h1>Daftar Siswa</h1>
-    <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Deleniti eius a adipisci vero, saepe aut distinctio quaerat possimus totam obcaecati quibusdam recusandae perspiciatis nisi consequatur enim sit nihil asperiores, quasi nostrum repudiandae eos voluptate repellat! Incidunt consectetur, unde esse voluptas, illum praesentium corporis maiores odio tempore pariatur, accusantium aperiam? Repellat incidunt distinctio corporis. Repellendus id illum ducimus totam maiores, quae corrupti saepe voluptate aspernatur possimus ad hic officiis vitae earum, quasi debitis voluptates necessitatibus ut iusto! Repellendus asperiores consequuntur vel maxime corporis. Odit expedita asperiores non, natus fugit molestias nostrum modi amet? Ad, error. Necessitatibus magni maxime iste, architecto eligendi voluptatum modi commodi doloribus, provident laudantium nobis, voluptates accusantium consequuntur beatae numquam ad totam similique optio error. Molestiae reprehenderit obcaecati voluptate inventore voluptatum exercitationem quos corporis mollitia quibusdam voluptates nisi, fuga dolor accusamus nesciunt veritatis! Nesciunt mollitia quae placeat sint qui! Voluptas dolorum cupiditate sapiente in, accusamus natus dicta est sit optio quia harum eaque aliquam, deserunt hic temporibus enim. Recusandae neque architecto tenetur nobis, assumenda aliquid consectetur explicabo veritatis, iusto saepe voluptas eveniet in corrupti a adipisci facere culpa. Eos ut id dolorem similique perferendis architecto tenetur corrupti veritatis distinctio quo nesciunt deleniti incidunt itaque, officia quasi quisquam quod ab expedita dicta at. Velit, dolore, sit distinctio sint consequuntur totam voluptatibus quibusdam iste error ipsam fuga? Laudantium aspernatur architecto odio voluptas quasi? Officia impedit asperiores distinctio ullam perferendis eligendi nemo corporis temporibus cum ex soluta, mollitia illum velit aspernatur recusandae laboriosam in delectus veritatis repellat modi hic quo amet!</p>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3 col-lg-2 min-vh-100 p-3"
+             style="background-color: #0d6efd;">
+            <h2 class="text-white mb-4">
+                SMK Muhammadiyah Kota Tasikmalaya
+            </h2>
+            <ul class="nav nav-pills flex-column">
+                <li class="nav-item mb-2">
+                    <a href="dashboard.php"
+                       class="nav-link text-white">
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a href="siswa.php"
+                       class="nav-link active">
+                        Data Siswa
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a href="guru.php"
+                       class="nav-link text-white">
+                        Data Guru
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a href="kelas.php"
+                       class="nav-link text-white">
+                        Kelas
+                    </a>
+                </li>
+                <li class="nav-item mb-2">
+                    <a href="tentang.php"
+                       class="nav-link text-white">
+                        Tentang
+                    </a>
+                </li>
+                <hr class="text-white">
+                <li class="nav-item">
+                    <a href="logout.php"
+                       class="nav-link text-danger">
+                        Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+     <div class="col-md-9 col-lg-10 p-4">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                         <h5>Data Siswa</h5>
+                            <h2><?= $total_siswa ?></h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 <?php include "footer.php"; ?>
 </body>
 </html>
