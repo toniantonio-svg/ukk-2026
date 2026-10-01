@@ -4,15 +4,15 @@
     $nama = $_SESSION['name'];
     $role = $_SESSION['role'];
     require_once "config.php";
-
-    $query_kelas = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_kelas");
-    if (!$query_kelas) {
-        die("query kelas gagal: " . mysqli_error($conn));
+    
+    $query_pelanggaran = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_pelanggaran");
+    if (!$query_pelanggaran) {
+        die("query pelanggaran gagal: " . mysqli_error($conn));
     }
-    $data_kelas = mysqli_fetch_assoc($query_kelas);
-    $total_kelas = $data_kelas['total'];
-
-    $result = mysqli_query($conn, "SELECT * FROM t_kelas ORDER BY id ASC");
+    $data_pelanggaran = mysqli_fetch_assoc($query_pelanggaran);
+    $total_pelanggaran = $data_pelanggaran['total'];
+    
+    $result = mysqli_query($conn, "SELECT * FROM t_pelanggaran ORDER BY id ASC");
     if (!$result) {
         die("ambil data gagal: " . mysqli_error($conn));
     }
@@ -22,7 +22,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KELOLA DATA KELAS</title>
+    <title>KELOLA JENIS PELANGGARAN</title>
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
         rel="stylesheet"
@@ -31,14 +31,13 @@
 </head>
 <body>
 <?php include "menu.php"; ?>
-
 <div class="col-md-9 col-lg-10 p-4">
     <div class="row mb-4">
         <div class="col-md-4">
             <div class="card">
                 <div class="card-body">
-                    <h5>JUMLAH DATA KELAS</h5>
-                    <h2><?= $total_kelas ?></h2>
+                    <h5>DATA JENIS PELANGGARAN</h5>
+                    <h2><?= $total_pelanggaran ?></h2>
                 </div>
             </div>
         </div>
@@ -51,9 +50,10 @@
                         <tr>
                             <th>NO</th>
                             <th>ID</th>
+                            <th>KODE</th>
                             <th>NAMA</th>
-                            <th>TINGKAT</th>
-                            <th>JURUSAN</th>
+                            <th>POIN</th>
+                            <th>DESKRIPSI</th>
                             <th>STATUS AKTIF</th>
                             <th>DIBUAT</th>
                             <th>DIUPDATE</th>
@@ -72,15 +72,16 @@
                         <tr>
                             <td><?= $no ?></td>
                             <td><?= $row['id'] ?></td>
+                            <td><?= $row['kode'] ?></td>
                             <td><?= $row['nama'] ?></td>
-                            <td><?= $row['tingkat'] ?></td>
-                            <td><?= $row['jurusan'] ?></td>
+                            <td><?= $row['poin'] ?></td>
+                            <td><?= $row['deskripsi'] ?></td>
                             <td><?= $row['status_aktif'] ?></td>
                             <td><?= $row['created_at'] ?></td>
                             <td><?= $updated_tampil ?></td>
                             <td>
-                                <a href="edit_siswa.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-primary">UBAH</a>
-                                <a href="hapus_siswa.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('yakin ingin menghapus?')">HAPUS</a>
+                                <a href="edit_jenis_pelanggaran.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-primary">UBAH</a>
+                                <a href="hapus_jenis_pelanggaran.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('yakin ingin menghapus?')">HAPUS</a>
                             </td>
                         </tr>
                         <?php
@@ -93,7 +94,6 @@
         </div>
     </div>
 </div>
-
 <?php include "footer.php"; ?>
 </body>
 </html>

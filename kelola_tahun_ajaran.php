@@ -5,14 +5,14 @@
     $role = $_SESSION['role'];
     require_once "config.php";
 
-    $query_kelas = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_kelas");
-    if (!$query_kelas) {
-        die("query kelas gagal: " . mysqli_error($conn));
+    $query_tahun = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_tahun_ajaran");
+    if (!$query_tahun) {
+        die("query tahun ajaran gagal: " . mysqli_error($conn));
     }
-    $data_kelas = mysqli_fetch_assoc($query_kelas);
-    $total_kelas = $data_kelas['total'];
+    $data_tahun = mysqli_fetch_assoc($query_tahun);
+    $total_tahun = $data_tahun['total'];
 
-    $result = mysqli_query($conn, "SELECT * FROM t_kelas ORDER BY id ASC");
+    $result = mysqli_query($conn, "SELECT * FROM t_tahun_ajaran ORDER BY id ASC");
     if (!$result) {
         die("ambil data gagal: " . mysqli_error($conn));
     }
@@ -22,7 +22,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KELOLA DATA KELAS</title>
+    <title>KELOLA TAHUN AJARAN</title>
     <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
         rel="stylesheet"
@@ -37,8 +37,8 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-body">
-                    <h5>JUMLAH DATA KELAS</h5>
-                    <h2><?= $total_kelas ?></h2>
+                    <h5>DATA TAHUN AJARAN</h5>
+                    <h2><?= $total_tahun ?></h2>
                 </div>
             </div>
         </div>
@@ -51,9 +51,9 @@
                         <tr>
                             <th>NO</th>
                             <th>ID</th>
-                            <th>NAMA</th>
-                            <th>TINGKAT</th>
-                            <th>JURUSAN</th>
+                            <th>TAHUN</th>
+                            <th>TANGGAL MULAI</th>
+                            <th>TANGGAL SELESAI</th>
                             <th>STATUS AKTIF</th>
                             <th>DIBUAT</th>
                             <th>DIUPDATE</th>
@@ -73,8 +73,8 @@
                             <td><?= $no ?></td>
                             <td><?= $row['id'] ?></td>
                             <td><?= $row['nama'] ?></td>
-                            <td><?= $row['tingkat'] ?></td>
-                            <td><?= $row['jurusan'] ?></td>
+                            <td><?= $row['tanggal_mulai'] ?></td>
+                            <td><?= $row['tanggal_selesai'] ?></td>
                             <td><?= $row['status_aktif'] ?></td>
                             <td><?= $row['created_at'] ?></td>
                             <td><?= $updated_tampil ?></td>
@@ -93,7 +93,6 @@
         </div>
     </div>
 </div>
-
 <?php include "footer.php"; ?>
 </body>
 </html>
