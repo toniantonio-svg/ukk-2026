@@ -8,7 +8,6 @@
         <br>
         Semua Hak Dilindungi
         <br>
-        CP:
-        abcdabc
+        toniantonioo_
     </p>
 </footer>

@@ -1,105 +1,91 @@
 <?php
-    require_once "cek_session.php";
-    cek_login();
-    $nama = $_SESSION['name'];
-    $role = $_SESSION['role'];
-    require_once "config.php";
+require_once "config.php";
+require_once "cek_session.php";
+cek_admin();
 
-    $query_siswa = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_siswa");
-    if (!$query_siswa) {
-        die("query siswa gagal: " . mysqli_error($conn));
-    }
-    $data_siswa = mysqli_fetch_assoc($query_siswa);
-    $total_siswa = $data_siswa['total'];
+$query_siswa = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_siswa");
+if (!$query_siswa) {
+    die("Query siswa gagal: " . mysqli_error($conn));
+}
+$total_siswa = mysqli_fetch_assoc($query_siswa)['total'];
 
-    $result = mysqli_query($conn, "SELECT * FROM t_siswa ORDER BY id ASC");
-    if (!$result) {
-        die("ambil data gagal: " . mysqli_error($conn));
-    }
+$result = mysqli_query($conn, "SELECT * FROM t_siswa ORDER BY id ASC");
+if (!$result) {
+    die("Ambil data siswa gagal: " . mysqli_error($conn));
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>data siswa</title>
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
-        crossorigin="anonymous">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kelola Data Siswa</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-<?php include "menu.php"; ?>
+<div class="container-fluid">
+    <div class="row">
+        <?php include "menu.php"; ?>
 
-<div class="col-md-9 col-lg-10 p-4">
-    <!-- Kartu Total Siswa -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card">
+        <main class="col-md-9 col-lg-10 p-4">
+            <h2 class="mb-4">Kelola Data Siswa</h2>
+
+            <div class="card mb-4 shadow-sm">
                 <div class="card-body">
                     <h5>JUMLAH DATA SISWA</h5>
-                    <h2><?= $total_siswa ?></h2>
+                    <h2><?= (int)$total_siswa ?></h2>
                 </div>
             </div>
-        </div>
-    </div>
-    <div class="card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-striped table-hover">
-                    <thead class="table-primary">
-                        <tr>
-                            <th>NO</th>
-                            <th>ID</th>
-                            <th>NIS</th>
-                            <th>NAMA</th>
-                            <th>JENIS KELAMIN</th>
-                            <th>TANGGAL LAHIR</th>
-                            <th>ALAMAT</th>
-                            <th>DIBUAT</th>
-                            <th>DIUPDATE</th>
-                            <th>AKSI</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        $no = 1;
-                        while ($row = mysqli_fetch_assoc($result)) {
-                            $updated_tampil = $row['updated_at'];
-                            if (empty($updated_tampil) || $updated_tampil === '0000-00-00 00:00:00') {
-                                $updated_tampil = $row['created_at'];
-                            }
-                        ?>
-                        <tr>
-                            <td><?= $no ?></td>
-                            <td><?= $row['id'] ?></td>
-                            <td><?= $row['nis'] ?></td>
-                            <td><?= $row['nama'] ?></td>
-                            <td><?= $row['jenis_kelamin'] ?></td>
-                            <td><?= $row['tanggal_lahir'] ?></td>
-                            <td><?= $row['alamat'] ?></td>
-                            <td><?= $row['created_at'] ?></td>
-                            <td><?= $updated_tampil ?></td>
-                            <td>
-                                <a href="edit_siswa.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-primary">UBAH</a>
-                                <a href="hapus_siswa.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('yakin ingin menghapus?')">HAPUS</a>
-                            </td>
-                        </tr>
-                        <?php
-                            $no++;
-                        }
-                        ?>
-                        <tr>
-                            <td colspan="9"></td>
-                            <td>
-                                <a href="tambah_data_siswa.php" class="btn btn-sm btn-success w-100">TAMBAH SISWA</a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5>Daftar Siswa</h5>
+                        <a href="tambah_data_siswa.php" class="btn btn-success">+ Tambah Siswa</a>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped table-hover">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th>No</th><th>ID</th><th>NIS</th><th>Nama</th>
+                                    <th>Jenis Kelamin</th><th>Tanggal Lahir</th>
+                                    <th>Alamat</th><th>Dibuat</th><th>Diupdate</th><th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php if (mysqli_num_rows($result) > 0): ?>
+                                <?php $no = 1; while ($row = mysqli_fetch_assoc($result)):
+                                    $updated = $row['updated_at'] ?? '';
+                                    if (empty($updated) || $updated === '0000-00-00 00:00:00') {
+                                        $updated = $row['created_at'] ?? '-';
+                                    }
+                                ?>
+                                <tr>
+                                    <td><?= $no++ ?></td>
+                                    <td><?= htmlspecialchars((string)$row['id']) ?></td>
+                                    <td><?= htmlspecialchars((string)($row['nis'] ?? '-')) ?></td>
+                                    <td><?= htmlspecialchars((string)($row['nama'] ?? '-')) ?></td>
+                                    <td><?= htmlspecialchars((string)($row['jenis_kelamin'] ?? '-')) ?></td>
+                                    <td><?= htmlspecialchars((string)($row['tanggal_lahir'] ?? '-')) ?></td>
+                                    <td><?= htmlspecialchars((string)($row['alamat'] ?? '-')) ?></td>
+                                    <td><?= htmlspecialchars((string)($row['created_at'] ?? '-')) ?></td>
+                                    <td><?= htmlspecialchars((string)$updated) ?></td>
+                                    <td class="text-nowrap">
+                                        <a href="edit_siswa.php?id=<?= urlencode((string)$row['id']) ?>" class="btn btn-sm btn-primary">Ubah</a>
+                                        <a href="hapus_siswa.php?id=<?= urlencode((string)$row['id']) ?>" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus siswa ini?')">Hapus</a>
+                                    </td>
+                                </tr>
+                                <?php endwhile; ?>
+                            <?php else: ?>
+                                <tr><td colspan="10" class="text-center">Belum ada data siswa.</td></tr>
+                            <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-        </div>
+        </main>
     </div>
 </div>
 <?php include "footer.php"; ?>

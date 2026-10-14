@@ -1,20 +1,45 @@
 <?php
-require_once "cek_session.php";
-cek_login();
-$nama = $_SESSION['name'];
-$role = $_SESSION['role'];
 require_once "config.php";
+require_once "cek_session.php";
 
-$query_siswa = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_siswa");
+cek_login();
+
+$nama = $_SESSION['name'];
+$role = strtolower(trim($_SESSION['role']));
+
+$query_siswa = mysqli_query(
+    $conn,
+    "SELECT COUNT(*) AS total FROM t_siswa"
+);
+
+if (!$query_siswa) {
+    die("Query siswa gagal: " . mysqli_error($conn));
+}
+
 $data_siswa = mysqli_fetch_assoc($query_siswa);
 $total_siswa = $data_siswa['total'];
 
-$query_pelanggaran = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_pelanggaran");
+$query_pelanggaran = mysqli_query(
+    $conn,
+    "SELECT COUNT(*) AS total FROM t_pelanggaran"
+);
+
+if (!$query_pelanggaran) {
+    die("Query pelanggaran gagal: " . mysqli_error($conn));
+}
+
 $data_pelanggaran = mysqli_fetch_assoc($query_pelanggaran);
 $total_pelanggaran = $data_pelanggaran['total'];
 
-// === TAMBAHAN: Menghitung Jumlah Guru ===
-$query_guru = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_guru");
+$query_guru = mysqli_query(
+    $conn,
+    "SELECT COUNT(*) AS total FROM t_guru"
+);
+
+if (!$query_guru) {
+    die("Query guru gagal: " . mysqli_error($conn));
+}
+
 $data_guru = mysqli_fetch_assoc($query_guru);
 $total_guru = $data_guru['total'];
 ?>
@@ -22,41 +47,115 @@ $total_guru = $data_guru['total'];
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Dashboard - SMK Muhammadiyah Kota Tasikmalaya</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
 </head>
+
 <body>
-<?php include "menu.php"; ?>
-        <div class="col-md-9 col-lg-10 p-4">
-            <div class="row">
-                <div class="col-md-4 mb-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5>JUMLAH DATA SISWA</h5>
-                            <h2><?= $total_siswa ?></h2>
+
+<div class="container-fluid">
+    <div class="row">
+
+        <!-- SIDEBAR -->
+        <?php include "menu.php"; ?>
+
+        <!-- KONTEN UTAMA -->
+        <main class="col-md-9 col-lg-10 ms-auto p-4">
+
+            <h2 class="mb-4">
+                Dashboard
+            </h2>
+
+            <p>
+                Selamat datang,
+                <strong><?= htmlspecialchars($nama) ?></strong>!
+            </p>
+
+            <?php if ($role === 'admin'): ?>
+
+                <!-- DASHBOARD ADMIN -->
+                <div class="row">
+
+                    <div class="col-md-4 mb-3">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <h5>JUMLAH DATA SISWA</h5>
+                                <h2><?= (int)$total_siswa ?></h2>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5>JUMLAH DATA GURU</h5>
-                            <h2><?= $total_guru ?></h2>
+
+                    <div class="col-md-4 mb-3">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <h5>JUMLAH DATA GURU</h5>
+                                <h2><?= (int)$total_guru ?></h2>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5>JUMLAH PELANGGARAN</h5>
-                            <h2 class="bs-secondary-bg-rgb"><?= $total_pelanggaran ?></h2>
+
+                    <div class="col-md-4 mb-3">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <h5>JUMLAH PELANGGARAN</h5>
+                                <h2><?= (int)$total_pelanggaran ?></h2>
+                            </div>
                         </div>
                     </div>
+
                 </div>
-            </div>
-        </div>
+
+            <?php elseif ($role === 'guru'): ?>
+
+                <!-- DASHBOARD GURU -->
+                <div class="row">
+
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <h5>CATAT PELANGGARAN</h5>
+                                <p>Catat pelanggaran siswa.</p>
+                                <a href="pelanggaran.php"
+                                   class="btn btn-primary">
+                                    Buka
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <h5>RIWAYAT PELANGGARAN</h5>
+                                <p>Lihat data pelanggaran siswa.</p>
+                                <a href="pelanggaran.php"
+                                   class="btn btn-primary">
+                                    Buka
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            <?php endif; ?>
+
+        </main>
+
     </div>
 </div>
-    <?php include "footer.php"; ?>
+
+<?php
+if (file_exists("footer.php")) {
+    include "footer.php";
+}
+?>
+
 </body>
 </html>

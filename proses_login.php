@@ -1,8 +1,7 @@
 <?php
-
 require_once "config.php";
 
-if (isset($_SESSION['user_id'])) {
+if (isset($_SESSION['login']) && $_SESSION['login'] === true) {
     header("Location: dashboard.php");
     exit;
 }
@@ -19,79 +18,126 @@ if ($username === '' || $password === '') {
     header("Location: index.php?pesan=kosong");
     exit;
 }
+
 $stmt = mysqli_prepare(
     $conn,
-    "SELECT *
+    "SELECT id, name, email, password, role
      FROM t_users
      WHERE name = ? OR email = ?
      LIMIT 1"
 );
 
-mysqli_stmt_bind_param(
-    $stmt,
-    "ss",
-    $username,
-    $username
-);
-
+mysqli_stmt_bind_param($stmt, "ss", $username, $username);
 mysqli_stmt_execute($stmt);
 
 $result = mysqli_stmt_get_result($stmt);
 $user = mysqli_fetch_assoc($result);
 
 mysqli_stmt_close($stmt);
-if ($user && $password === $user['password']) {
 
-    $role = strtolower(trim($user['role'] ?? ''));
+if (!$user) {
+    $stmt = mysqli_prepare(
+        $conn,
+        "SELECT user_id, status_aktif
+         FROM t_guru
+         WHERE nip = ?
+            OR email = ?
+            OR LOWER(REPLACE(nama, ' ', '')) =
+               LOWER(REPLACE(?, ' ', ''))
+         LIMIT 1"
+    );
 
-    if ($role === 'admin') {
+    mysqli_stmt_bind_param(
+        $stmt,
+        "sss",
+        $username,
+        $username,
+        $username
+    );
 
-        session_regenerate_id(true);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $guru = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
 
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['name']    = $user['name'];
-        $_SESSION['email']   = $user['email'];
-        $_SESSION['role']    = 'admin';
-        $_SESSION['login']   = true;
+    if ($guru) {
+        if ((int)$guru['status_aktif'] !== 1) {
+            header("Location: index.php?pesan=nonaktif");
+            exit;
+        }
 
-        header("Location: dashboard.php");
-        exit;
+        if (!empty($guru['user_id'])) {
+            $stmt = mysqli_prepare(
+                $conn,
+                "SELECT id, name, email, password, role
+                 FROM t_users
+                 WHERE id = ?
+                 LIMIT 1"
+            );
+
+            mysqli_stmt_bind_param(
+                $stmt,
+                "i",
+                $guru['user_id']
+            );
+
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $user = mysqli_fetch_assoc($result);
+            mysqli_stmt_close($stmt);
+        }
     }
 }
-$stmt = mysqli_prepare(
-    $conn,
-    "SELECT *
-     FROM t_guru
-     WHERE email = ?
-        OR nip = ?
-        OR LOWER(REPLACE(nama, ' ', '')) = LOWER(?)
-     LIMIT 1"
-);
 
-mysqli_stmt_bind_param(
-    $stmt,
-    "sss",
-    $username,
-    $username,
-    $username
-);
+if (!$user || $password !== $user['password']) {
+    header("Location: index.php?pesan=gagal");
+    exit;
+}
 
-mysqli_stmt_execute($stmt);
+$role = strtolower(trim($user['role'] ?? ''));
 
-$result = mysqli_stmt_get_result($stmt);
-$guru = mysqli_fetch_assoc($result);
+if ($role === 'admin') {
+    session_regenerate_id(true);
 
-mysqli_stmt_close($stmt);
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['name']    = $user['name'];
+    $_SESSION['email']   = $user['email'];
+    $_SESSION['role']    = 'admin';
+    $_SESSION['login']   = true;
 
-if ($guru && $password === $guru['password']) {
+    header("Location: dashboard.php");
+    exit;
+}
 
-    if ($guru['status_aktif'] != 1) {
+if ($role === 'guru') {
+    $stmt = mysqli_prepare(
+        $conn,
+        "SELECT id, nama, email, status_aktif
+         FROM t_guru
+         WHERE user_id = ?
+         LIMIT 1"
+    );
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        "i",
+        $user['id']
+    );
+
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $guru = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+
+    if (!$guru || (int)$guru['status_aktif'] !== 1) {
         header("Location: index.php?pesan=nonaktif");
         exit;
     }
+
     session_regenerate_id(true);
 
-    $_SESSION['user_id'] = $guru['id'];
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['guru_id'] = $guru['id'];
     $_SESSION['name']    = $guru['nama'];
     $_SESSION['email']   = $guru['email'];
     $_SESSION['role']    = 'guru';
@@ -102,3 +148,4 @@ if ($guru && $password === $guru['password']) {
 }
 header("Location: index.php?pesan=gagal");
 exit;
+?>

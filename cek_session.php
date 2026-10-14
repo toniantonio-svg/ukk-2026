@@ -1,4 +1,5 @@
 <?php
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -8,7 +9,8 @@ function cek_login()
     if (
         !isset($_SESSION['login']) ||
         $_SESSION['login'] !== true ||
-        !isset($_SESSION['user_id'])
+        !isset($_SESSION['user_id']) ||
+        !isset($_SESSION['role'])
     ) {
         header("Location: index.php");
         exit;
@@ -20,11 +22,30 @@ function cek_admin()
     cek_login();
 
     if ($_SESSION['role'] !== 'admin') {
+        header("Location: dashboard.php?pesan=akses_ditolak");
+        exit;
+    }
+}
 
-        echo "<h2>Mohon Maaf, Akses Anda Ditolak!</h2>";
-        echo "<p>Anda tidak memiliki izin mengakses halaman ini.</p>";
-        echo "<a href='dashboard.php'>Kembali ke Dashboard</a>";
+function cek_guru()
+{
+    cek_login();
 
+    if ($_SESSION['role'] !== 'guru') {
+        header("Location: dashboard.php?pesan=akses_ditolak");
+        exit;
+    }
+}
+
+function cek_admin_atau_guru()
+{
+    cek_login();
+
+    if (
+        $_SESSION['role'] !== 'admin' &&
+        $_SESSION['role'] !== 'guru'
+    ) {
+        header("Location: index.php");
         exit;
     }
 }
