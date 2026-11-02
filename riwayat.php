@@ -8,8 +8,8 @@ cek_login();
 $nama = $_SESSION['name'];
 $role = strtolower(trim($_SESSION['role']));
 
-// === HAK AKSES ===
-if ($role !== 'admin' && $role !== 'wali_kelas') {
+// === HAK AKSES — DIPERBAIKI: Guru juga boleh akses ===
+if ($role !== 'admin' && $role !== 'wali_kelas' && $role !== 'guru') {
     echo "<script>alert('Anda tidak berhak mengakses halaman ini!');location.href='dashboard.php';</script>";
     exit;
 }
@@ -73,15 +73,16 @@ if ($role === 'wali_kelas' && $kelas_id > 0) {
             k.nama AS kategori,
             p.poin,
             p.keterangan,
-            p.tanggal
+            p.created_at AS tanggal
         FROM t_pelanggaran_siswa p
         LEFT JOIN t_siswa s ON p.siswa_id = s.id
         LEFT JOIN t_pelanggaran_kategori k ON p.kategori_id = k.id
         LEFT JOIN t_kelas_siswa ks ON s.id = ks.siswa_id
         WHERE ks.kelas_id = '$kelas_id'
-        ORDER BY p.tanggal DESC, p.id DESC
+        ORDER BY p.created_at DESC, p.id DESC
     ";
 } else {
+    // Guru & Admin lihat semua
     $sql = "
         SELECT 
             p.id,
@@ -90,11 +91,11 @@ if ($role === 'wali_kelas' && $kelas_id > 0) {
             k.nama AS kategori,
             p.poin,
             p.keterangan,
-            p.tanggal
+            p.created_at AS tanggal
         FROM t_pelanggaran_siswa p
         LEFT JOIN t_siswa s ON p.siswa_id = s.id
         LEFT JOIN t_pelanggaran_kategori k ON p.kategori_id = k.id
-        ORDER BY p.tanggal DESC, p.id DESC
+        ORDER BY p.created_at DESC, p.id DESC
     ";
 }
 
@@ -122,6 +123,10 @@ while ($row = mysqli_fetch_assoc($result)) {
             <?php if ($role === 'wali_kelas'): ?>
                 <div class="alert alert-info mb-4">
                     Role: Wali Kelas | Kelas : <strong><?= htmlspecialchars($nama_kelas) ?></strong>
+                </div>
+            <?php elseif ($role === 'guru'): ?>
+                <div class="alert alert-info mb-4">
+                    Role: Guru — Menampilkan semua riwayat pelanggaran
                 </div>
             <?php else: ?>
                 <div class="alert alert-info mb-4">

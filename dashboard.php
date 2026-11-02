@@ -51,18 +51,18 @@ if ($role === 'wali_kelas') {
             SELECT COUNT(*) AS jumlah
             FROM t_pelanggaran_siswa p
             JOIN t_kelas_siswa ks ON p.siswa_id = ks.siswa_id
-            WHERE ks.kelas_id = '$kelas_id' AND DATE(p.tanggal) = '$hari'
+            WHERE ks.kelas_id = '$kelas_id' AND DATE(p.created_at) = '$hari'
         ");
         if ($q_hari) {
             $pelanggaran_hari_ini = (int)(mysqli_fetch_assoc($q_hari)['jumlah'] ?? 0);
         }
         
-        $bulan = date('Y-m-d', strtotime('-1 month'));
+        $batas_bulan = date('Y-m-d', strtotime('-30 days'));
         $q_bulan = mysqli_query($conn, "
             SELECT COUNT(*) AS jumlah
             FROM t_pelanggaran_siswa p
             JOIN t_kelas_siswa ks ON p.siswa_id = ks.siswa_id
-            WHERE ks.kelas_id = '$kelas_id' AND DATE(p.tanggal) >= '$bulan'
+            WHERE ks.kelas_id = '$kelas_id' AND DATE(p.created_at) >= '$batas_bulan'
         ");
         if ($q_bulan) {
             $pelanggaran_bulan_ini = (int)(mysqli_fetch_assoc($q_bulan)['jumlah'] ?? 0);
