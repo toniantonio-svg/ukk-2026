@@ -3,6 +3,7 @@ require_once "config.php";
 require_once "cek_session.php";
 cek_admin();
 
+// Fungsi pembersihan tampilan
 function e($value) {
     return htmlspecialchars(
         (string)($value ?? '-'),
@@ -16,51 +17,62 @@ $query_total = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_kelas_siswa"
 if (!$query_total) die("Query total gagal: " . mysqli_error($conn));
 $total = (int)(mysqli_fetch_assoc($query_total)['total'] ?? 0);
 
-// Ambil data penempatan
+// Ambil data penempatan lengkap
 $result = mysqli_query($conn, "
-    SELECT ks.*, 
+    SELECT ks.id, ks.siswa_id, ks.kelas_id, ks.tahun_ajaran_id,
            s.nama AS nama_siswa, 
            k.nama AS nama_kelas, 
            ta.nama AS nama_tahun_ajaran
     FROM t_kelas_siswa ks
-    LEFT JOIN t_siswa s ON ks.siswa_id = s.id
-    LEFT JOIN t_kelas k ON ks.kelas_id = k.id
+    LEFT JOIN t_siswa s       ON ks.siswa_id = s.id
+    LEFT JOIN t_kelas k       ON ks.kelas_id = k.id
     LEFT JOIN t_tahun_ajaran ta ON ks.tahun_ajaran_id = ta.id
     ORDER BY ks.id DESC
 ");
 if (!$result) die("Ambil data gagal: " . mysqli_error($conn));
 
-// Data untuk dropdown
-$siswa_list = mysqli_query($conn, "SELECT id, nama FROM t_siswa ORDER BY nama");
-$kelas_list = mysqli_query($conn, "SELECT id, nama FROM t_kelas ORDER BY nama");
-$tahun_list = mysqli_query($conn, "SELECT id, nama FROM t_tahun_ajaran WHERE status_aktif = 1 ORDER BY nama");
+// Data untuk dropdown pilihan
+$siswa_list   = mysqli_query($conn, "SELECT id, nama FROM t_siswa ORDER BY nama");
+$kelas_list   = mysqli_query($conn, "SELECT id, nama FROM t_kelas ORDER BY nama");
+$tahun_list   = mysqli_query($conn, "SELECT id, nama FROM t_tahun_ajaran WHERE status_aktif = 1 ORDER BY nama");
 
-// Simpan penempatan
+// Proses simpan penempatan
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan'])) {
-    $siswa_id = $_POST['siswa_id'] ?? '';
-    $kelas_id = $_POST['kelas_id'] ?? '';
-    $tahun_ajaran_id = $_POST['tahun_ajaran_id'] ?? '';
-    
+    $siswa_id          = trim($_POST['siswa_id'] ?? '');
+    $kelas_id          = trim($_POST['kelas_id'] ?? '');
+    $tahun_ajaran_id   = trim($_POST['tahun_ajaran_id'] ?? '');
+
     if ($siswa_id && $kelas_id && $tahun_ajaran_id) {
-        $cek = mysqli_query($conn, "SELECT id FROM t_kelas_siswa 
-            WHERE siswa_id = '$siswa_id' AND kelas_id = '$kelas_id' AND tahun_ajaran_id = '$tahun_ajaran_id'");
-        
-        if (mysqli_num_rows($cek) > 0) {
+        // Cek duplikasi dengan prepared statement
+        $cek_stmt = mysqli_prepare($conn, "SELECT id FROM t_kelas_siswa 
+            WHERE siswa_id = ? AND kelas_id = ? AND tahun_ajaran_id = ?");
+        mysqli_stmt_bind_param($cek_stmt, "iii", $siswa_id, $kelas_id, $tahun_ajaran_id);
+        mysqli_stmt_execute($cek_stmt);
+        $cek_result = mysqli_stmt_get_result($cek_stmt);
+
+        if (mysqli_num_rows($cek_result) > 0) {
             $pesan = '<div class="alert alert-warning">Siswa sudah ditempatkan di kelas ini untuk tahun ajaran tersebut!</div>';
         } else {
-            $sql = "INSERT INTO t_kelas_siswa (siswa_id, kelas_id, tahun_ajaran_id) 
-                    VALUES ('$siswa_id', '$kelas_id', '$tahun_ajaran_id')";
-            mysqli_query($conn, $sql);
+            // Masukkan data dengan prepared statement
+            $insert_stmt = mysqli_prepare($conn, "INSERT INTO t_kelas_siswa 
+                (siswa_id, kelas_id, tahun_ajaran_id) VALUES (?, ?, ?)");
+            mysqli_stmt_bind_param($insert_stmt, "iii", $siswa_id, $kelas_id, $tahun_ajaran_id);
+            mysqli_stmt_execute($insert_stmt);
+            
             header("Location: kelola_penempatan_siswa.php");
             exit;
         }
     }
 }
 
-// Hapus penempatan
+// Proses hapus penempatan
 if (isset($_GET['hapus'])) {
-    $id = $_GET['hapus'];
-    mysqli_query($conn, "DELETE FROM t_kelas_siswa WHERE id = '$id'");
+    $id = (int)$_GET['hapus'];
+    if ($id > 0) {
+        $del_stmt = mysqli_prepare($conn, "DELETE FROM t_kelas_siswa WHERE id = ?");
+        mysqli_stmt_bind_param($del_stmt, "i", $id);
+        mysqli_stmt_execute($del_stmt);
+    }
     header("Location: kelola_penempatan_siswa.php");
     exit;
 }
@@ -80,7 +92,7 @@ if (isset($_GET['hapus'])) {
         <main class="col-md-9 col-lg-10 p-4">
             <h2 class="mb-4">Kelola Penempatan Siswa ke Kelas</h2>
 
-            <!-- Jumlah Penempatan — SAMA PERSIS DENGAN KODE KATEGORI -->
+            <!-- Jumlah Penempatan -->
             <div class="row mb-4">
                 <div class="col-md-5 col-lg-4">
                     <div class="card shadow-sm border-0">
@@ -96,7 +108,8 @@ if (isset($_GET['hapus'])) {
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-body">
                     <h5 class="mb-3">Tambah Penempatan</h5>
-                    <?php if (isset($pesan)) echo $pesan; ?>
+                    <?php if (!empty($pesan)) echo $pesan; ?>
+                    
                     <form method="post" class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label">Siswa</label>
@@ -107,6 +120,7 @@ if (isset($_GET['hapus'])) {
                                 <?php endwhile; ?>
                             </select>
                         </div>
+                        
                         <div class="col-md-4">
                             <label class="form-label">Kelas</label>
                             <select name="kelas_id" class="form-select" required>
@@ -116,6 +130,7 @@ if (isset($_GET['hapus'])) {
                                 <?php endwhile; ?>
                             </select>
                         </div>
+                        
                         <div class="col-md-4">
                             <label class="form-label">Tahun Ajaran</label>
                             <select name="tahun_ajaran_id" class="form-select" required>
@@ -125,6 +140,7 @@ if (isset($_GET['hapus'])) {
                                 <?php endwhile; ?>
                             </select>
                         </div>
+                        
                         <div class="col-12">
                             <button type="submit" name="simpan" class="btn btn-primary">Simpan Penempatan</button>
                         </div>
@@ -157,7 +173,7 @@ if (isset($_GET['hapus'])) {
                                         <td><?= e($row['nama_kelas']) ?></td>
                                         <td><?= e($row['nama_tahun_ajaran']) ?></td>
                                         <td class="text-center">
-                                            <a href="?hapus=<?= $row['id'] ?>" 
+                                            <a href="?hapus=<?= (int)$row['id'] ?>" 
                                                class="btn btn-sm btn-danger"
                                                onclick="return confirm('Yakin hapus penempatan ini?')">Hapus</a>
                                         </td>

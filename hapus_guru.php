@@ -9,3 +9,4 @@ if ($id) {
 }
 header("Location: guru.php");
 exit;
+?>

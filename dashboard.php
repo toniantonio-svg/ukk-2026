@@ -1,31 +1,23 @@
 <?php
 require_once "config.php";
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
 require_once "cek_session.php";
 cek_login();
+
 $nama = $_SESSION['name'];
 $role = strtolower(trim($_SESSION['role']));
 
-// === DATA UMUM ===
 $query_siswa = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_siswa");
-$data_siswa = mysqli_fetch_assoc($query_siswa);
-$total_siswa = (int)($data_siswa['total'] ?? 0);
+$total_siswa = (int)(mysqli_fetch_assoc($query_siswa)['total'] ?? 0);
 
 $query_pelanggaran = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_pelanggaran_siswa");
-$data_pelanggaran = mysqli_fetch_assoc($query_pelanggaran);
-$total_pelanggaran = (int)($data_pelanggaran['total'] ?? 0);
+$total_pelanggaran = (int)(mysqli_fetch_assoc($query_pelanggaran)['total'] ?? 0);
 
 $query_guru = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_guru");
-$data_guru = mysqli_fetch_assoc($query_guru);
-$total_guru = (int)($data_guru['total'] ?? 0);
+$total_guru = (int)(mysqli_fetch_assoc($query_guru)['total'] ?? 0);
 
-// === DATA WALI KELAS ===
 $nama_kelas = '-';
-$jumlah_siswa_kelas = 0;
-$pelanggaran_hari_ini = 0;
-$pelanggaran_bulan_ini = 0;
+$jumlah_siswa_kelas = $pelanggaran_hari_ini = $pelanggaran_bulan_ini = 0;
 
 if ($role === 'wali_kelas') {
     $q = mysqli_query($conn, "
@@ -34,18 +26,16 @@ if ($role === 'wali_kelas') {
         JOIN t_kelas k ON w.kelas_id = k.id
         LEFT JOIN t_guru g ON w.guru_id = g.id
         WHERE w.status_aktif = 1
-        AND g.nama LIKE '%" . mysqli_real_escape_string($conn, $nama) . "%'
+          AND g.nama LIKE '%" . mysqli_real_escape_string($conn, $nama) . "%'
         LIMIT 1
     ");
     if ($q && $r = mysqli_fetch_assoc($q)) {
         $kelas_id = $r['kelas_id'];
         $nama_kelas = $r['nama_kelas'];
-        
+
         $q_siswa = mysqli_query($conn, "SELECT COUNT(*) AS jumlah FROM t_kelas_siswa WHERE kelas_id = '$kelas_id'");
-        if ($q_siswa) {
-            $jumlah_siswa_kelas = (int)(mysqli_fetch_assoc($q_siswa)['jumlah'] ?? 0);
-        }
-        
+        if ($q_siswa) $jumlah_siswa_kelas = (int)(mysqli_fetch_assoc($q_siswa)['jumlah'] ?? 0);
+
         $hari = date('Y-m-d');
         $q_hari = mysqli_query($conn, "
             SELECT COUNT(*) AS jumlah
@@ -53,10 +43,8 @@ if ($role === 'wali_kelas') {
             JOIN t_kelas_siswa ks ON p.siswa_id = ks.siswa_id
             WHERE ks.kelas_id = '$kelas_id' AND DATE(p.created_at) = '$hari'
         ");
-        if ($q_hari) {
-            $pelanggaran_hari_ini = (int)(mysqli_fetch_assoc($q_hari)['jumlah'] ?? 0);
-        }
-        
+        if ($q_hari) $pelanggaran_hari_ini = (int)(mysqli_fetch_assoc($q_hari)['jumlah'] ?? 0);
+
         $batas_bulan = date('Y-m-d', strtotime('-30 days'));
         $q_bulan = mysqli_query($conn, "
             SELECT COUNT(*) AS jumlah
@@ -64,9 +52,7 @@ if ($role === 'wali_kelas') {
             JOIN t_kelas_siswa ks ON p.siswa_id = ks.siswa_id
             WHERE ks.kelas_id = '$kelas_id' AND DATE(p.created_at) >= '$batas_bulan'
         ");
-        if ($q_bulan) {
-            $pelanggaran_bulan_ini = (int)(mysqli_fetch_assoc($q_bulan)['jumlah'] ?? 0);
-        }
+        if ($q_bulan) $pelanggaran_bulan_ini = (int)(mysqli_fetch_assoc($q_bulan)['jumlah'] ?? 0);
     }
 }
 ?>

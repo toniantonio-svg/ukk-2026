@@ -6,36 +6,18 @@ require_once "cek_session.php";
 cek_admin();
 
 function e($value) {
-    return htmlspecialchars(
-        (string)($value ?? '-'),
-        ENT_QUOTES,
-        'UTF-8'
-    );
+    return htmlspecialchars((string)($value ?? '-'), ENT_QUOTES, 'UTF-8');
 }
 
-// Menghitung jumlah guru
-$query_guru = mysqli_query(
-    $conn,
-    "SELECT COUNT(*) AS total FROM t_guru"
-);
-if (!$query_guru) {
-    die("Query guru gagal: " . mysqli_error($conn));
-}
-$data_guru = mysqli_fetch_assoc($query_guru);
-$total_guru = (int)$data_guru['total'];
+$query_guru = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_guru");
+if (!$query_guru) die("Query guru gagal: " . mysqli_error($conn));
+$total_guru = (int)(mysqli_fetch_assoc($query_guru)['total'] ?? 0);
 
-// Mengambil data guru
-$result = mysqli_query(
-    $conn,
-    "SELECT * FROM t_guru ORDER BY id ASC"
-);
-if (!$result) {
-    die("Pengambilan data guru gagal: " . mysqli_error($conn));
-}
+$result = mysqli_query($conn, "SELECT * FROM t_guru ORDER BY id ASC");
+if (!$result) die("Pengambilan data guru gagal: " . mysqli_error($conn));
 
-// Mendeteksi kolom updated
-$fields = mysqli_fetch_fields($result);
 $kolom_updated = null;
+$fields = mysqli_fetch_fields($result);
 foreach ($fields as $field) {
     if (stripos($field->name, 'updated') !== false) {
         $kolom_updated = $field->name;
@@ -60,7 +42,6 @@ mysqli_data_seek($result, 0);
         <main class="col-md-9 col-lg-10 p-4">
             <h2 class="mb-4">Kelola Data Guru</h2>
 
-            <!-- Jumlah Guru — SAMA PERSIS DENGAN GAYA KATEGORI -->
             <div class="row mb-4">
                 <div class="col-md-5 col-lg-4">
                     <div class="card shadow-sm border-0">
@@ -72,18 +53,14 @@ mysqli_data_seek($result, 0);
                 </div>
             </div>
 
-            <!-- Daftar Guru -->
             <div class="card shadow-sm border-0">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                         <h5 class="mb-0 fw-semibold">Daftar Guru</h5>
-                        <a href="tambah_guru.php" class="btn btn-success">
-                            + Tambah Guru
-                        </a>
+                        <a href="tambah_guru.php" class="btn btn-success">+ Tambah Guru</a>
                     </div>
                     <div class="table-responsive">
-                        <table id="tabelGuru"
-                               class="table table-bordered table-striped table-hover align-middle w-100">
+                        <table id="tabelGuru" class="table table-bordered table-striped table-hover align-middle w-100">
                             <thead class="table-primary text-white">
                                 <tr>
                                     <th class="text-center" width="5%">No.</th>
@@ -98,12 +75,8 @@ mysqli_data_seek($result, 0);
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php
-                                $no = 1;
-                                while ($row = mysqli_fetch_assoc($result)):
-                                    $nilai_updated = $kolom_updated
-                                        ? ($row[$kolom_updated] ?? '')
-                                        : '';
+                                <?php $no = 1; while ($row = mysqli_fetch_assoc($result)):
+                                    $nilai_updated = $kolom_updated ? ($row[$kolom_updated] ?? '') : '';
                                     if (empty($nilai_updated) || $nilai_updated === '0000-00-00 00:00:00') {
                                         $nilai_updated = $row['created_at'] ?? '-';
                                     }
@@ -127,17 +100,11 @@ mysqli_data_seek($result, 0);
                                     <td><?= e($row['created_at'] ?? '-') ?></td>
                                     <td><?= e($nilai_updated) ?></td>
                                     <td class="text-center text-nowrap">
-                                        <a href="edit_guru.php?id=<?= urlencode((string)$row['id']) ?>"
-                                           class="btn btn-sm btn-primary me-1"
-                                           title="Ubah">
-                                            Ubah
-                                        </a>
-                                        <a href="hapus_guru.php?id=<?= urlencode((string)$row['id']) ?>"
-                                           class="btn btn-sm btn-danger"
-                                           title="Hapus"
-                                           onclick="return confirm('Yakin ingin menghapus data guru ini?')">
-                                            Hapus
-                                        </a>
+                                        <a href="edit_guru.php?id=<?= urlencode((string)$row['id']) ?>" 
+                                           class="btn btn-sm btn-primary me-1" title="Ubah">Ubah</a>
+                                        <a href="hapus_guru.php?id=<?= urlencode((string)$row['id']) ?>" 
+                                           class="btn btn-sm btn-danger" title="Hapus"
+                                           onclick="return confirm('Yakin ingin menghapus data guru ini?')">Hapus</a>
                                     </td>
                                 </tr>
                                 <?php endwhile; ?>
@@ -157,32 +124,18 @@ mysqli_data_seek($result, 0);
 <script>
 $(document).ready(function () {
     $('#tabelGuru').DataTable({
-        language: {
-            url: 'https://cdn.datatables.net/plug-ins/2.3.4/i18n/id.json'
-        },
+        language: { url: 'https://cdn.datatables.net/plug-ins/2.3.4/i18n/id.json' },
         pageLength: 10,
-        lengthMenu: [
-            [5, 10, 25, 50, 100, -1],
-            [5, 10, 25, 50, 100, 'Semua']
-        ],
+        lengthMenu: [[5, 10, 25, 50, 100, -1], [5, 10, 25, 50, 100, 'Semua']],
         order: [[1, 'asc']],
         columnDefs: [
-            {
-                targets: [0, 8],
-                orderable: false,
-                searchable: false
-            },
-            {
-                targets: [0, 4, 5, 8],
-                className: 'text-center'
-            }
+            { targets: [0, 8], orderable: false, searchable: false },
+            { targets: [0, 4, 5, 8], className: 'text-center' }
         ],
         autoWidth: false,
         layout: {
-            topStart: 'pageLength',
-            topEnd: 'search',
-            bottomStart: 'info',
-            bottomEnd: 'paging'
+            topStart: 'pageLength', topEnd: 'search',
+            bottomStart: 'info', bottomEnd: 'paging'
         }
     });
 });

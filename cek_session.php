@@ -58,3 +58,4 @@ function cek_admin_atau_guru_atau_wali()
         exit;
     }
 }
+?>

@@ -9,3 +9,4 @@ if ($id) {
 }
 header("Location: siswa.php");
 exit;
+?>

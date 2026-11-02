@@ -1,21 +1,17 @@
 <?php
 require_once "config.php";
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
 require_once "cek_session.php";
 cek_login();
 
 $nama = $_SESSION['name'];
 $role = strtolower(trim($_SESSION['role']));
 
-// === HANYA ADMIN ===
 if ($role !== 'admin') {
     echo "<script>alert('Anda tidak berhak mengakses halaman ini!\\nHanya Administrator yang dapat mencetak laporan.');location.href='dashboard.php';</script>";
     exit;
 }
 
-// === AMBIL DATA LAPORAN SEMUA KELAS ===
 $daftar_siswa = [];
 $q_siswa = mysqli_query($conn, "
     SELECT s.id, s.nama, s.nis, k.nama AS nama_kelas,
@@ -29,11 +25,7 @@ $q_siswa = mysqli_query($conn, "
     HAVING total_poin > 0
     ORDER BY k.nama ASC, total_poin DESC, s.nama ASC
 ");
-if ($q_siswa) {
-    while ($row = mysqli_fetch_assoc($q_siswa)) {
-        $daftar_siswa[] = $row;
-    }
-}
+if ($q_siswa) while ($row = mysqli_fetch_assoc($q_siswa)) $daftar_siswa[] = $row;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -76,9 +68,7 @@ if ($q_siswa) {
             </div>
 
             <?php if (empty($daftar_siswa)): ?>
-                <div class="alert alert-info text-center">
-                    Belum ada data pelanggaran untuk dicetak.
-                </div>
+                <div class="alert alert-info text-center">Belum ada data pelanggaran untuk dicetak.</div>
             <?php else: ?>
                 <div class="table-responsive">
                     <table class="table table-bordered">
@@ -94,13 +84,11 @@ if ($q_siswa) {
                         </thead>
                         <tbody>
                             <?php
-                            $no = 1;
-                            $total_semua = 0;
+                            $no = 1; $total_semua = 0;
                             foreach ($daftar_siswa as $s):
                                 $poin = (int)$s['total_poin'];
                                 $jml = (int)$s['jumlah_melanggar'];
                                 $total_semua += $poin;
-                                
                                 $baris = '';
                                 if ($poin >= 50) $baris = 'table-danger';
                                 elseif ($poin >= 20) $baris = 'table-warning';

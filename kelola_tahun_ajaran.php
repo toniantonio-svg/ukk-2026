@@ -11,10 +11,12 @@ function e($value) {
     );
 }
 
+// Hitung total tahun ajaran
 $query = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_tahun_ajaran");
 if (!$query) die("Query tahun ajaran gagal: " . mysqli_error($conn));
 $total = (int)(mysqli_fetch_assoc($query)['total'] ?? 0);
 
+// Ambil semua data tahun ajaran
 $result = mysqli_query($conn, "SELECT * FROM t_tahun_ajaran ORDER BY id ASC");
 if (!$result) die("Ambil data tahun ajaran gagal: " . mysqli_error($conn));
 ?>
@@ -33,7 +35,7 @@ if (!$result) die("Ambil data tahun ajaran gagal: " . mysqli_error($conn));
         <main class="col-md-9 col-lg-10 p-4">
             <h2 class="mb-4">Kelola Tahun Ajaran</h2>
 
-            <!-- Jumlah Tahun Ajaran — SAMA PERSIS DENGAN GAYA KATEGORI -->
+            <!-- Jumlah Tahun Ajaran -->
             <div class="row mb-4">
                 <div class="col-md-5 col-lg-4">
                     <div class="card shadow-sm border-0">
@@ -64,16 +66,20 @@ if (!$result) die("Ambil data tahun ajaran gagal: " . mysqli_error($conn));
                             </thead>
                             <tbody>
                                 <?php if (mysqli_num_rows($result) > 0): ?>
-                                    <?php $no = 1; while ($row = mysqli_fetch_assoc($result)):
+                                    <?php 
+                                    $no = 1;
+                                    while ($row = mysqli_fetch_assoc($result)):
+                                        // Tangani tanggal update
                                         $updated = $row['updated_at'] ?? '';
                                         if (empty($updated) || $updated === '0000-00-00 00:00:00') {
                                             $updated = $row['created_at'] ?? '-';
                                         }
-                                        
-                                        $status = $row['status_aktif'] ?? '';
-                                        if ((string)$status === '1') {
+
+                                        // Tentukan tampilan status
+                                        $status = (string)($row['status_aktif'] ?? '');
+                                        if ($status === '1') {
                                             $status_badge = '<span class="badge bg-success">Aktif</span>';
-                                        } elseif ((string)$status === '0') {
+                                        } elseif ($status === '0') {
                                             $status_badge = '<span class="badge bg-secondary">Tidak Aktif</span>';
                                         } else {
                                             $status_badge = e($status);
