@@ -80,6 +80,50 @@ function e($val) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Laporan Pelanggaran - SMK Muhammadiyah Kota Tasikmalaya</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+    @media print {
+        .no-print,
+        .no-print * {
+            display: none !important;
+            visibility: hidden !important;
+        }
+        main {
+            width: 100% !important;
+            flex: 0 0 100% !important;
+            max-width: 100% !important;
+        }
+        .row {
+            display: block !important;
+        }
+        body {
+            background: #fff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        .table-dark {
+            --bs-table-bg: #212529 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .table-danger {
+            --bs-table-bg: #f8d7da !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        .table-warning {
+            --bs-table-bg: #fff3cd !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        @page {
+            margin: 1cm;
+        }
+    }
+    </style>
 </head>
 <body>
 <div class="container-fluid">
@@ -89,7 +133,7 @@ function e($val) {
             <h2 class="mb-3">Laporan Pelanggaran Siswa</h2>
             <p>Selamat datang, <strong><?= e($nama) ?></strong>!</p>
 
-            <div class="alert alert-info mb-4">
+            <div class="alert alert-info mb-4 no-print">
                 Role: <?= $role === 'admin' ? 'Administrator' : 'Wali Kelas' ?>
                 <?php if ($role === 'wali_kelas'): ?>
                     | Kelas : <strong><?= e($nama_kelas) ?></strong>
@@ -99,7 +143,7 @@ function e($val) {
             <?php if (empty($daftar_siswa)): ?>
                 <div class="alert alert-warning">
                     Belum ada siswa yang melanggar. Semua siswa tertib 😊
-                    <a href="catat_pelanggaran.php" class="alert-link d-block mt-2">
+                    <a href="catat_pelanggaran.php" class="alert-link d-block mt-2 no-print">
                         Klik di sini untuk mencatat pelanggaran pertama
                     </a>
                 </div>
@@ -145,11 +189,16 @@ function e($val) {
                         </div>
                     </div>
                 </div>
-                <a href="catat_pelanggaran.php" class="btn btn-primary">Catat Pelanggaran Baru</a>
+
+                <div class="d-flex gap-2 no-print">
+                    <a href="catat_pelanggaran.php" class="btn btn-primary">Catat Pelanggaran Baru</a>
+                    <button onclick="window.print()" class="btn btn-outline-secondary">Cetak / Export PDF</button>
+                </div>
             <?php endif; ?>
         </main>
     </div>
 </div>
+
 <?php file_exists("footer.php") && include "footer.php"; ?>
 </body>
 </html>

@@ -9,11 +9,13 @@ function e($value) {
     return htmlspecialchars((string)($value ?? '-'), ENT_QUOTES, 'UTF-8');
 }
 
-$query = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_pelanggaran");
+// ✅ PERBAIKAN: TABEL BENAR = t_pelanggaran_kategori
+$query = mysqli_query($conn, "SELECT COUNT(*) AS total FROM t_pelanggaran_kategori");
 if (!$query) die("Query jenis pelanggaran gagal: " . mysqli_error($conn));
 $total = (int)(mysqli_fetch_assoc($query)['total'] ?? 0);
 
-$result = mysqli_query($conn, "SELECT * FROM t_pelanggaran ORDER BY id ASC");
+// ✅ PERBAIKAN: TABEL BENAR = t_pelanggaran_kategori
+$result = mysqli_query($conn, "SELECT * FROM t_pelanggaran_kategori ORDER BY id ASC");
 if (!$result) die("Ambil data jenis pelanggaran gagal: " . mysqli_error($conn));
 ?>
 <!DOCTYPE html>
@@ -62,14 +64,14 @@ if (!$result) die("Ambil data jenis pelanggaran gagal: " . mysqli_error($conn));
                                 <tr>
                                     <th class="text-center" width="4%">No.</th>
                                     <th class="text-center" width="4%">ID</th>
-                                    <th width="10%">Kode</th>
-                                    <th width="15%">Nama</th>
-                                    <th class="text-center" width="6%">Poin</th>
-                                    <th width="20%">Deskripsi</th>
-                                    <th class="text-center" width="9%">Status Aktif</th>
-                                    <th width="11%">Dibuat</th>
-                                    <th width="11%">Diupdate</th>
-                                    <th class="text-center" width="10%">Aksi</th>
+                                    <!-- ❌ Kolom Kode dihapus karena tidak ada di tabel -->
+                                    <th width="20%">Nama</th>
+                                    <th class="text-center" width="8%">Poin</th>
+                                    <th width="30%">Deskripsi</th>
+                                    <th class="text-center" width="12%">Status Aktif</th>
+                                    <th width="12%">Dibuat</th>
+                                    <th width="12%">Diupdate</th>
+                                    <th class="text-center" width="12%">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -90,9 +92,9 @@ if (!$result) die("Ambil data jenis pelanggaran gagal: " . mysqli_error($conn));
                                 <tr>
                                     <td class="text-center"><?= $no++ ?></td>
                                     <td class="text-center"><?= e($row['id']) ?></td>
-                                    <td><?= e($row['kode']) ?></td>
+                                    <!-- ❌ Kolom Kode dihapus, tidak ada di database -->
                                     <td><?= e($row['nama']) ?></td>
-                                    <td class="text-center"><?= e($row['poin']) ?></td>
+                                    <td class="text-center fw-bold"><?= e($row['poin']) ?></td>
                                     <td><?= e($row['deskripsi']) ?></td>
                                     <td class="text-center"><?= $status_badge ?></td>
                                     <td><?= e($row['created_at']) ?></td>
@@ -127,8 +129,8 @@ $(document).ready(function () {
         lengthMenu: [[5,10,25,50,100,-1],[5,10,25,50,100,'Semua']],
         order: [[1,'asc']],
         columnDefs: [
-            { targets: [0,9], orderable:false, searchable:false },
-            { targets: [0,1,4,6,9], className:'text-center' }
+            { targets: [0,7], orderable:false, searchable:false },
+            { targets: [0,1,3,5,7], className:'text-center' }
         ],
         autoWidth: false,
         layout: { topStart:'pageLength', topEnd:'search', bottomStart:'info', bottomEnd:'paging' }

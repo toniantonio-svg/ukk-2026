@@ -30,34 +30,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $status_aktif = (int)($_POST['status_aktif'] ?? 1);
 
     if ($nip && $nama && $email) {
-        // Cek NIP duplikat
-        $cek_nip = mysqli_query($conn, "SELECT id FROM t_guru WHERE nip = '".mysqli_real_escape_string($conn, $nip)."'");
-        if (mysqli_num_rows($cek_nip) > 0) {
-            $pesan = '<div class="alert alert-danger">NIP sudah terdaftar!</div>';
+        // ✅ VALIDASI: NIP hanya angka & maksimal 18 digit
+        if (!preg_match('/^\d{1,18}$/', $nip)) {
+            $pesan = '<div class="alert alert-danger">NIP hanya boleh berisi angka dan maksimal 18 digit!</div>';
         } else {
-            // Ambil nomor urut untuk user_id
-            $next_id = (int)(mysqli_fetch_assoc(mysqli_query($conn, "SELECT MAX(id) AS max_id FROM t_guru"))['max_id'] ?? 0) + 1;
+            // Cek NIP duplikat
+            $cek_nip = mysqli_query($conn, "SELECT id FROM t_guru WHERE nip = '".mysqli_real_escape_string($conn, $nip)."'");
+            if (mysqli_num_rows($cek_nip) > 0) {
+                $pesan = '<div class="alert alert-danger">NIP sudah terdaftar!</div>';
+            } else {
+                // Ambil nomor urut untuk user_id
+                $next_id = (int)(mysqli_fetch_assoc(mysqli_query($conn, "SELECT MAX(id) AS max_id FROM t_guru"))['max_id'] ?? 0) + 1;
 
-            // Simpan ke t_guru
-            $simpan = mysqli_query($conn, "
-                INSERT INTO t_guru (nip, nama, email, status_aktif, user_id)
-                VALUES (
-                    '".mysqli_real_escape_string($conn, $nip)."',
-                    '".mysqli_real_escape_string($conn, $nama)."',
-                    '".mysqli_real_escape_string($conn, $email)."',
-                    $status_aktif,
-                    $next_id
-                )
-            ");
+                // Simpan ke t_guru
+                $simpan = mysqli_query($conn, "
+                    INSERT INTO t_guru (nip, nama, email, status_aktif, user_id)
+                    VALUES (
+                        '".mysqli_real_escape_string($conn, $nip)."',
+                        '".mysqli_real_escape_string($conn, $nama)."',
+                        '".mysqli_real_escape_string($conn, $email)."',
+                        $status_aktif,
+                        $next_id
+                    )
+                ");
 
-            if ($simpan) {
-                // === SINKRONISASI OTOMATIS ===
-                sinkron_email_user($conn, $nama, $email);
-                
-                header("Location: guru.php?pesan=berhasil");
-                exit;
+                if ($simpan) {
+                    // === SINKRONISASI OTOMATIS ===
+                    sinkron_email_user($conn, $nama, $email);
+                    
+                    header("Location: guru.php?pesan=berhasil");
+                    exit;
+                }
+                $pesan = '<div class="alert alert-danger">Gagal simpan: ' . mysqli_error($conn) . '</div>';
             }
-            $pesan = '<div class="alert alert-danger">Gagal simpan: ' . mysqli_error($conn) . '</div>';
         }
     } else {
         $pesan = '<div class="alert alert-warning">Lengkapi semua data!</div>';
@@ -83,8 +88,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="card-body">
                     <form method="POST">
                         <div class="mb-3">
-                            <label class="form-label fw-bold">NIP</label>
-                            <input type="text" name="nip" class="form-control" required>
+                            <label class="form-label fw-bold">NIP <small class="text-muted">(Maks. 18 digit angka)</small></label>
+                            <input type="text" name="nip" class="form-control" 
+                                   maxlength="18" pattern="\d*" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold">Nama Lengkap</label>

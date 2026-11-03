@@ -9,7 +9,7 @@ function aktif($hal, $page) {
     return $hal === $page ? 'active bg-white text-primary fw-semibold' : 'text-white-50';
 }
 ?>
-<div class="col-md-3 col-lg-2 bg-primary text-white"
+<div class="col-md-3 col-lg-2 bg-primary text-white no-print"
      style="position: sticky; top: 0; height: 100vh; overflow-y: auto; scrollbar-width: none;">
     <style>
         div::-webkit-scrollbar { display: none; width: 0; }
@@ -99,14 +99,6 @@ function aktif($hal, $page) {
             <li class="nav-item">
                 <a href="riwayat.php" class="nav-link px-3 py-2 <?= aktif($halaman, 'riwayat.php') ?>">
                     Riwayat
-                </a>
-            </li>
-            <?php endif; ?>
-
-            <?php if ($role === 'admin'): ?>
-            <li class="nav-item">
-                <a href="export.php" class="nav-link px-3 py-2 <?= aktif($halaman, 'export.php') ?>">
-                    Cetak/Export
                 </a>
             </li>
             <?php endif; ?>
