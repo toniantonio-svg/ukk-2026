@@ -1,43 +1,42 @@
 <?php
 require_once "config.php";
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
 require_once "cek_session.php";
 cek_login();
+
 $nama = $_SESSION['name'];
 $role = strtolower(trim($_SESSION['role']));
 
-// === HANYA ADMIN & WALI KELAS ===
-if ($role !== 'admin' && $role !== 'wali_kelas') {
+// === Cek Hak Akses ===
+if (!in_array($role, ['admin', 'wali_kelas'])) {
     echo "<script>alert('Anda tidak berhak mengakses halaman ini!');location.href='dashboard.php';</script>";
     exit;
 }
 
-// === AMBIL DATA KELAS ===
-$nama_kelas = '';
+// === Data Kelas untuk Wali Kelas ===
 $kelas_id = 0;
+$nama_kelas = $role === 'admin' ? 'Semua Kelas' : '';
+
 if ($role === 'wali_kelas') {
     $q = mysqli_query($conn, "
         SELECT w.kelas_id, k.nama AS nama_kelas
         FROM t_wali_kelas w
         JOIN t_kelas k ON w.kelas_id = k.id
-        LEFT JOIN t_guru g ON w.guru_id = g.id
+        JOIN t_guru g ON w.guru_id = g.id
         WHERE w.status_aktif = 1
-        AND g.nama LIKE '%" . mysqli_real_escape_string($conn, $nama) . "%'
+          AND g.nama LIKE '%" . mysqli_real_escape_string($conn, $nama) . "%'
         LIMIT 1
     ");
-    if ($q && $r = mysqli_fetch_assoc($q)) {
+    if ($r = mysqli_fetch_assoc($q)) {
         $kelas_id = $r['kelas_id'];
         $nama_kelas = $r['nama_kelas'];
     }
-} else {
-    $nama_kelas = 'Semua Kelas';
 }
 
-// === AMBIL DATA SISWA YANG MELANGGAR SAJA + JUMLAH KALI ===
+// === Ambil Data Siswa Pelanggaran ===
 $daftar_siswa = [];
-if ($role === 'wali_kelas' && $kelas_id > 0) {
+
+if ($role === 'wali_kelas' && $kelas_id) {
     $q_siswa = mysqli_query($conn, "
         SELECT s.id, s.nama, s.nis,
                COUNT(p.id) AS jumlah_kali,
@@ -45,7 +44,7 @@ if ($role === 'wali_kelas' && $kelas_id > 0) {
         FROM t_siswa s
         INNER JOIN t_kelas_siswa ks ON s.id = ks.siswa_id
         INNER JOIN t_pelanggaran_siswa p ON s.id = p.siswa_id
-        WHERE ks.kelas_id = '$kelas_id'
+        WHERE ks.kelas_id = " . (int)$kelas_id . "
         GROUP BY s.id, s.nama, s.nis
         ORDER BY jumlah_kali DESC, total_poin DESC, s.nama ASC
     ");
@@ -68,6 +67,11 @@ if (!empty($q_siswa)) {
         $daftar_siswa[] = $row;
     }
 }
+
+// === Fungsi Bantu Escape Tampilan ===
+function e($val) {
+    return htmlspecialchars((string)$val, ENT_QUOTES, 'UTF-8');
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -83,25 +87,24 @@ if (!empty($q_siswa)) {
         <?php include "menu.php"; ?>
         <main class="col-md-9 col-lg-10 p-4">
             <h2 class="mb-3">Laporan Pelanggaran Siswa</h2>
-            <p>Selamat datang, <strong><?= htmlspecialchars($nama) ?></strong>!</p>
-            
-            <?php if ($role === 'wali_kelas'): ?>
-                <div class="alert alert-info mb-4">
-                    Role: Wali Kelas | Kelas : <strong><?= htmlspecialchars($nama_kelas) ?></strong>
-                </div>
-            <?php else: ?>
-                <div class="alert alert-info mb-4">
-                    Role: Administrator
-                </div>
-            <?php endif; ?>
+            <p>Selamat datang, <strong><?= e($nama) ?></strong>!</p>
+
+            <div class="alert alert-info mb-4">
+                Role: <?= $role === 'admin' ? 'Administrator' : 'Wali Kelas' ?>
+                <?php if ($role === 'wali_kelas'): ?>
+                    | Kelas : <strong><?= e($nama_kelas) ?></strong>
+                <?php endif; ?>
+            </div>
 
             <?php if (empty($daftar_siswa)): ?>
                 <div class="alert alert-warning">
                     Belum ada siswa yang melanggar. Semua siswa tertib 😊
-                    <a href="catat_pelanggaran.php" class="alert-link d-block mt-2">Klik di sini untuk mencatat pelanggaran pertama</a>
+                    <a href="catat_pelanggaran.php" class="alert-link d-block mt-2">
+                        Klik di sini untuk mencatat pelanggaran pertama
+                    </a>
                 </div>
             <?php else: ?>
-                <div class="card shadow-sm">
+                <div class="card shadow-sm mb-3">
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-striped table-hover mb-0">
@@ -118,27 +121,23 @@ if (!empty($q_siswa)) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php
-                                    $no = 1;
-                                    foreach ($daftar_siswa as $s):
+                                    <?php $no = 1; foreach ($daftar_siswa as $s):
                                         $poin = (int)$s['total_poin'];
-                                        $warna = $poin > 50 ? 'table-danger' : ($poin > 20 ? 'table-warning' : '');
+                                        $baris_warna = $poin > 50 ? 'table-danger' : ($poin > 20 ? 'table-warning' : '');
                                     ?>
-                                    <tr class="<?= $warna ?>">
+                                    <tr class="<?= $baris_warna ?>">
                                         <td><?= $no++ ?></td>
-                                        <td><?= htmlspecialchars($s['nis']) ?></td>
-                                        <td><?= htmlspecialchars($s['nama']) ?></td>
+                                        <td><?= e($s['nis']) ?></td>
+                                        <td><?= e($s['nama']) ?></td>
                                         <?php if ($role === 'admin'): ?>
-                                            <td><?= htmlspecialchars($s['nama_kelas'] ?? '-') ?></td>
+                                            <td><?= e($s['nama_kelas'] ?? '-') ?></td>
                                         <?php endif; ?>
                                         <td class="text-center">
                                             <span class="badge bg-danger rounded-pill">
                                                 <?= (int)$s['jumlah_kali'] ?> kali
                                             </span>
                                         </td>
-                                        <td class="text-center fw-bold">
-                                            <?= $poin ?> poin
-                                        </td>
+                                        <td class="text-center fw-bold"><?= $poin ?> poin</td>
                                     </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -146,13 +145,11 @@ if (!empty($q_siswa)) {
                         </div>
                     </div>
                 </div>
-                <div class="mt-3">
-                    <a href="catat_pelanggaran.php" class="btn btn-primary">Catat Pelanggaran Baru</a>
-                </div>
+                <a href="catat_pelanggaran.php" class="btn btn-primary">Catat Pelanggaran Baru</a>
             <?php endif; ?>
         </main>
     </div>
 </div>
-<?php if (file_exists("footer.php")) include "footer.php"; ?>
+<?php file_exists("footer.php") && include "footer.php"; ?>
 </body>
 </html>

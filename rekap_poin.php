@@ -1,50 +1,49 @@
 <?php
 require_once "config.php";
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
 require_once "cek_session.php";
 cek_login();
 
 $nama = $_SESSION['name'];
 $role = strtolower(trim($_SESSION['role']));
 
-// === BATASAN HAK AKSES ===
-if ($role !== 'guru' && $role !== 'wali_kelas') {
-    echo "<script>alert('Anda tidak berhak mengakses halaman ini!\\nHanya Guru dan Wali Kelas yang dapat melihat rekap poin.');location.href='dashboard.php';</script>";
+// Fungsi bantu tampil aman
+function e($val) {
+    return htmlspecialchars((string)$val, ENT_QUOTES, 'UTF-8');
+}
+
+// === Hak Akses ===
+if (!in_array($role, ['guru', 'wali_kelas'])) {
+    echo "<script>alert('Anda tidak berhak mengakses halaman ini!\nHanya Guru dan Wali Kelas yang dapat melihat rekap poin.');location.href='dashboard.php';</script>";
     exit;
 }
 
-// === AMBIL DATA KELAS UNTUK WALI KELAS ===
-$nama_kelas = '';
+// === Data Kelas Wali ===
 $kelas_id = 0;
+$nama_kelas = '';
+
 if ($role === 'wali_kelas') {
     $q = mysqli_query($conn, "
         SELECT w.kelas_id, k.nama AS nama_kelas
         FROM t_wali_kelas w
         JOIN t_kelas k ON w.kelas_id = k.id
-        LEFT JOIN t_guru g ON w.guru_id = g.id
+        JOIN t_guru g ON w.guru_id = g.id
         WHERE w.status_aktif = 1
-        AND g.nama LIKE '%" . mysqli_real_escape_string($conn, $nama) . "%'
+          AND g.nama LIKE '%" . mysqli_real_escape_string($conn, $nama) . "%'
         LIMIT 1
     ");
-    if ($q && $r = mysqli_fetch_assoc($q)) {
+    if ($r = mysqli_fetch_assoc($q)) {
         $kelas_id = (int)$r['kelas_id'];
         $nama_kelas = $r['nama_kelas'];
     }
 }
 
-// === AMBIL DATA REKAP POIN ===
-$daftar_siswa = [];
-if ($role === 'wali_kelas' && $kelas_id > 0) {
-    // WALI KELAS: HANYA KELAS SENDIRI
+// === Query Rekap Poin ===
+if ($role === 'wali_kelas' && $kelas_id) {
     $sql = "
-        SELECT 
-            s.id,
-            s.nis,
-            s.nama,
-            COUNT(p.id) AS jumlah_pelanggaran,
-            COALESCE(SUM(p.poin), 0) AS total_poin
+        SELECT s.id, s.nis, s.nama,
+               COUNT(p.id) AS jumlah_pelanggaran,
+               COALESCE(SUM(p.poin), 0) AS total_poin
         FROM t_siswa s
         INNER JOIN t_kelas_siswa ks ON s.id = ks.siswa_id
         LEFT JOIN t_pelanggaran_siswa p ON s.id = p.siswa_id
@@ -53,15 +52,10 @@ if ($role === 'wali_kelas' && $kelas_id > 0) {
         ORDER BY total_poin DESC, jumlah_pelanggaran DESC, s.nama ASC
     ";
 } else {
-    // GURU: BISA LIHAT SEMUA ATAU PILIH KELAS
     $sql = "
-        SELECT 
-            s.id,
-            s.nis,
-            s.nama,
-            k.nama AS nama_kelas,
-            COUNT(p.id) AS jumlah_pelanggaran,
-            COALESCE(SUM(p.poin), 0) AS total_poin
+        SELECT s.id, s.nis, s.nama, k.nama AS nama_kelas,
+               COUNT(p.id) AS jumlah_pelanggaran,
+               COALESCE(SUM(p.poin), 0) AS total_poin
         FROM t_siswa s
         LEFT JOIN t_kelas_siswa ks ON s.id = ks.siswa_id
         LEFT JOIN t_kelas k ON ks.kelas_id = k.id
@@ -71,6 +65,7 @@ if ($role === 'wali_kelas' && $kelas_id > 0) {
     ";
 }
 
+$daftar_siswa = [];
 $result = mysqli_query($conn, $sql);
 while ($row = mysqli_fetch_assoc($result)) {
     $daftar_siswa[] = $row;
@@ -90,12 +85,12 @@ while ($row = mysqli_fetch_assoc($result)) {
         <?php include "menu.php"; ?>
         <main class="col-md-9 col-lg-10 p-4">
             <h2 class="mb-3">Rekapitulasi Poin Pelanggaran</h2>
-            <p>Selamat datang, <strong><?= htmlspecialchars($nama) ?></strong>!</p>
+            <p>Selamat datang, <strong><?= e($nama) ?></strong>!</p>
 
             <?php if ($role === 'wali_kelas'): ?>
                 <div class="alert alert-info mb-4">
-                    <strong>Role:</strong> Wali Kelas | 
-                    <strong>Kelas:</strong> <?= $kelas_id > 0 ? htmlspecialchars($nama_kelas) : 'Belum ditetapkan' ?>
+                    <strong>Role:</strong> Wali Kelas |
+                    <strong>Kelas:</strong> <?= $kelas_id ? e($nama_kelas) : 'Belum ditetapkan' ?>
                     <hr class="my-2">
                     <small class="text-muted">Anda hanya dapat melihat data siswa di kelas Anda sendiri</small>
                 </div>
@@ -129,13 +124,10 @@ while ($row = mysqli_fetch_assoc($result)) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php
-                                    $no = 1;
-                                    foreach ($daftar_siswa as $s):
+                                    <?php $no = 1; foreach ($daftar_siswa as $s):
                                         $poin = (int)$s['total_poin'];
-                                        $jml = (int)$s['jumlah_pelanggaran'];
-                                        
-                                        // Warna baris sesuai tingkat poin
+                                        $jml  = (int)$s['jumlah_pelanggaran'];
+
                                         if ($poin >= 50) {
                                             $baris = 'table-danger';
                                             $status = '<span class="badge bg-danger">Perlu Tindakan</span>';
@@ -152,17 +144,15 @@ while ($row = mysqli_fetch_assoc($result)) {
                                     ?>
                                     <tr class="<?= $baris ?>">
                                         <td class="text-center"><?= $no++ ?></td>
-                                        <td><?= htmlspecialchars($s['nis']) ?></td>
-                                        <td><?= htmlspecialchars($s['nama']) ?></td>
+                                        <td><?= e($s['nis']) ?></td>
+                                        <td><?= e($s['nama']) ?></td>
                                         <?php if ($role === 'guru'): ?>
-                                            <td><?= htmlspecialchars($s['nama_kelas'] ?? '-') ?></td>
+                                            <td><?= e($s['nama_kelas'] ?? '-') ?></td>
                                         <?php endif; ?>
                                         <td class="text-center">
                                             <span class="badge bg-secondary"><?= $jml ?> kali</span>
                                         </td>
-                                        <td class="text-center fw-bold text-danger">
-                                            <?= $poin ?> poin
-                                        </td>
+                                        <td class="text-center fw-bold text-danger"><?= $poin ?> poin</td>
                                         <td class="text-center"><?= $status ?></td>
                                     </tr>
                                     <?php endforeach; ?>
@@ -179,6 +169,6 @@ while ($row = mysqli_fetch_assoc($result)) {
         </main>
     </div>
 </div>
-<?php if (file_exists("footer.php")) include "footer.php"; ?>
+<?php file_exists("footer.php") && include "footer.php"; ?>
 </body>
 </html>

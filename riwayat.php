@@ -1,24 +1,28 @@
 <?php
 require_once "config.php";
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
 require_once "cek_session.php";
 cek_login();
+
 $nama = $_SESSION['name'];
 $role = strtolower(trim($_SESSION['role']));
 
-// === HAK AKSES — DIPERBAIKI: Guru juga boleh akses ===
-if ($role !== 'admin' && $role !== 'wali_kelas' && $role !== 'guru') {
+// Fungsi bantu tampil aman
+function e($val) {
+    return htmlspecialchars((string)$val, ENT_QUOTES, 'UTF-8');
+}
+
+// === Hak Akses ===
+if (!in_array($role, ['admin', 'wali_kelas', 'guru'])) {
     echo "<script>alert('Anda tidak berhak mengakses halaman ini!');location.href='dashboard.php';</script>";
     exit;
 }
 
-// === PROSES HAPUS ===
+// === Proses Hapus ===
 if (isset($_GET['hapus']) && is_numeric($_GET['hapus'])) {
     $id_hapus = (int)$_GET['hapus'];
-    
-    // Cek kepemilikan jika wali kelas
+
+    // Wali kelas cek kepemilikan
     if ($role === 'wali_kelas') {
         $cek = mysqli_query($conn, "
             SELECT 1 FROM t_pelanggaran_siswa p
@@ -27,71 +31,57 @@ if (isset($_GET['hapus']) && is_numeric($_GET['hapus'])) {
             LEFT JOIN t_wali_kelas w ON ks.kelas_id = w.kelas_id
             LEFT JOIN t_guru g ON w.guru_id = g.id
             WHERE p.id = $id_hapus
-            AND g.nama LIKE '%" . mysqli_real_escape_string($conn, $nama) . "%'
-            AND w.status_aktif = 1
+              AND g.nama LIKE '%" . mysqli_real_escape_string($conn, $nama) . "%'
+              AND w.status_aktif = 1
             LIMIT 1
         ");
-        if (mysqli_num_rows($cek) === 0) {
+        if (!mysqli_num_rows($cek)) {
             echo "<script>alert('Data tidak ditemukan atau Anda tidak berhak menghapus!');location.href='riwayat.php';</script>";
             exit;
         }
     }
-    
-    // Hapus data
+
     mysqli_query($conn, "DELETE FROM t_pelanggaran_siswa WHERE id = $id_hapus");
     echo "<script>alert('Data berhasil dihapus!');location.href='riwayat.php';</script>";
     exit;
 }
 
-// === AMBIL DATA KELAS JIKA WALI KELAS ===
-$nama_kelas = '';
+// === Data Kelas Wali ===
 $kelas_id = 0;
+$nama_kelas = '';
+
 if ($role === 'wali_kelas') {
     $q = mysqli_query($conn, "
         SELECT w.kelas_id, k.nama AS nama_kelas
         FROM t_wali_kelas w
         JOIN t_kelas k ON w.kelas_id = k.id
-        LEFT JOIN t_guru g ON w.guru_id = g.id
+        JOIN t_guru g ON w.guru_id = g.id
         WHERE w.status_aktif = 1
-        AND g.nama LIKE '%" . mysqli_real_escape_string($conn, $nama) . "%'
+          AND g.nama LIKE '%" . mysqli_real_escape_string($conn, $nama) . "%'
         LIMIT 1
     ");
-    if ($q && $r = mysqli_fetch_assoc($q)) {
-        $kelas_id = $r['kelas_id'];
+    if ($r = mysqli_fetch_assoc($q)) {
+        $kelas_id = (int)$r['kelas_id'];
         $nama_kelas = $r['nama_kelas'];
     }
 }
 
-// === AMBIL SEMUA RIWAYAT PELANGGARAN ===
-$daftar_riwayat = [];
-if ($role === 'wali_kelas' && $kelas_id > 0) {
+// === Query Riwayat ===
+if ($role === 'wali_kelas' && $kelas_id) {
     $sql = "
-        SELECT 
-            p.id,
-            s.nis,
-            s.nama AS nama_siswa,
-            k.nama AS kategori,
-            p.poin,
-            p.keterangan,
-            p.created_at AS tanggal
+        SELECT p.id, s.nis, s.nama AS nama_siswa,
+               k.nama AS kategori, p.poin, p.keterangan, p.created_at AS tanggal
         FROM t_pelanggaran_siswa p
         LEFT JOIN t_siswa s ON p.siswa_id = s.id
         LEFT JOIN t_pelanggaran_kategori k ON p.kategori_id = k.id
         LEFT JOIN t_kelas_siswa ks ON s.id = ks.siswa_id
-        WHERE ks.kelas_id = '$kelas_id'
+        WHERE ks.kelas_id = $kelas_id
         ORDER BY p.created_at DESC, p.id DESC
     ";
 } else {
-    // Guru & Admin lihat semua
     $sql = "
-        SELECT 
-            p.id,
-            s.nis,
-            s.nama AS nama_siswa,
-            k.nama AS kategori,
-            p.poin,
-            p.keterangan,
-            p.created_at AS tanggal
+        SELECT p.id, s.nis, s.nama AS nama_siswa,
+               k.nama AS kategori, p.poin, p.keterangan, p.created_at AS tanggal
         FROM t_pelanggaran_siswa p
         LEFT JOIN t_siswa s ON p.siswa_id = s.id
         LEFT JOIN t_pelanggaran_kategori k ON p.kategori_id = k.id
@@ -99,6 +89,7 @@ if ($role === 'wali_kelas' && $kelas_id > 0) {
     ";
 }
 
+$daftar_riwayat = [];
 $result = mysqli_query($conn, $sql);
 while ($row = mysqli_fetch_assoc($result)) {
     $daftar_riwayat[] = $row;
@@ -118,11 +109,11 @@ while ($row = mysqli_fetch_assoc($result)) {
         <?php include "menu.php"; ?>
         <main class="col-md-9 col-lg-10 p-4">
             <h2 class="mb-3">Riwayat Pelanggaran</h2>
-            <p>Selamat datang, <strong><?= htmlspecialchars($nama) ?></strong>!</p>
-            
+            <p>Selamat datang, <strong><?= e($nama) ?></strong>!</p>
+
             <?php if ($role === 'wali_kelas'): ?>
                 <div class="alert alert-info mb-4">
-                    Role: Wali Kelas | Kelas : <strong><?= htmlspecialchars($nama_kelas) ?></strong>
+                    Role: Wali Kelas | Kelas: <strong><?= e($nama_kelas) ?></strong>
                 </div>
             <?php elseif ($role === 'guru'): ?>
                 <div class="alert alert-info mb-4">
@@ -137,7 +128,7 @@ while ($row = mysqli_fetch_assoc($result)) {
             <?php if (empty($daftar_riwayat)): ?>
                 <div class="alert alert-warning">
                     Belum ada riwayat pelanggaran yang tercatat 😊
-                    <a href="catat_pelanggaran.php" class="alert-link d-block mt-2">Klik di sini untuk mencatat pelanggaran baru</a>
+                    <a href="catat_pelanggaran.php" class="alert-link d-block mt-2">Catat pelanggaran baru</a>
                 </div>
             <?php else: ?>
                 <div class="card shadow-sm">
@@ -157,31 +148,23 @@ while ($row = mysqli_fetch_assoc($result)) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php
-                                    $no = 1;
-                                    foreach ($daftar_riwayat as $r):
+                                    <?php $no = 1; foreach ($daftar_riwayat as $r):
                                         $poin = (int)$r['poin'];
-                                        $warna = $poin >= 10 ? 'table-danger' : ($poin >= 5 ? 'table-warning' : 'table-light');
+                                        $baris = $poin >= 10 ? 'table-danger' : ($poin >= 5 ? 'table-warning' : 'table-light');
                                         $tgl = date('d/m/Y H:i', strtotime($r['tanggal']));
                                     ?>
-                                    <tr class="<?= $warna ?>">
+                                    <tr class="<?= $baris ?>">
                                         <td class="text-center"><?= $no++ ?></td>
                                         <td><?= $tgl ?></td>
-                                        <td><?= htmlspecialchars($r['nis']) ?></td>
-                                        <td><?= htmlspecialchars($r['nama_siswa']) ?></td>
-                                        <td><?= htmlspecialchars($r['kategori'] ?? '-') ?></td>
-                                        <td class="text-center fw-bold text-danger">
-                                            <?= $poin ?>
-                                        </td>
-                                        <td>
-                                            <small class="text-muted">
-                                                <?= htmlspecialchars($r['keterangan'] ?? '-') ?>
-                                            </small>
-                                        </td>
+                                        <td><?= e($r['nis']) ?></td>
+                                        <td><?= e($r['nama_siswa']) ?></td>
+                                        <td><?= e($r['kategori'] ?? '-') ?></td>
+                                        <td class="text-center fw-bold text-danger"><?= $poin ?></td>
+                                        <td><small class="text-muted"><?= e($r['keterangan'] ?? '-') ?></small></td>
                                         <td class="text-center">
-                                            <a href="riwayat.php?hapus=<?= $r['id'] ?>" 
+                                            <a href="riwayat.php?hapus=<?= $r['id'] ?>"
                                                class="btn btn-sm btn-danger"
-                                               onclick="return confirm('Yakin ingin menghapus data ini? Tindakan tidak dapat dibatalkan!')">
+                                               onclick="return confirm('Yakin hapus? Tindakan tidak dapat dibatalkan!')">
                                                 Hapus
                                             </a>
                                         </td>
@@ -192,13 +175,13 @@ while ($row = mysqli_fetch_assoc($result)) {
                         </div>
                     </div>
                 </div>
-                <div class="mt-3 d-flex justify-content-between">
+                <div class="mt-3">
                     <a href="laporan.php" class="btn btn-secondary">Lihat Laporan Rekap</a>
                 </div>
             <?php endif; ?>
         </main>
     </div>
 </div>
-<?php if (file_exists("footer.php")) include "footer.php"; ?>
+<?php file_exists("footer.php") && include "footer.php"; ?>
 </body>
 </html>
